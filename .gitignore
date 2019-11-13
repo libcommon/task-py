@@ -1,0 +1,12 @@
+# Compiled Python files
+*__pycache__
+
+# Mypy cache
+*.mypy_cache
+
+# Python virtual environment
+*venv
+
+# Vim swap files
+*.swp
+*.swo
