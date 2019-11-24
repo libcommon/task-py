@@ -318,7 +318,7 @@ class CLITask(Task):    # pylint: disable=abstract-method
         subcommand_parser = parser
         # If command path is defined, traverse subcommands creating each subcommand if it does not exist already
         if cls._COMMAND_PATH is not None:
-            for command, description in cls._COMMAND_PATH:
+            for command, description in cls._COMMAND_PATH:  # pylint: disable=not-an-iterable
                 # If parser does not have subcommands or command is not in subcommands, create it
                 subcommand_parser = aputils.add_subcommand(subcommand_parser, command, description)
         # Create final subcommand and return
@@ -508,7 +508,10 @@ if os.environ.get("ENVIRONMENT") == "TEST":
                  lambda t: t.state == dict(apple="honey crisp") and t.foo == "bar"),
                 ("Exclude and include (bar, color)",
                  dict(include={"bar", "color"}, exclude={"bar", "color"}),
-                 lambda t: t.state == dict(apple="honey crisp") and t.foo == "bar")
+                 lambda t: t.state == dict(apple="honey crisp") and t.foo == "bar"),
+                ("Exclude with overwrite",
+                 dict(exclude={"bar"}, overwrite=dict(color="purple")),
+                 lambda t: t.state == dict(color="purple", apple="honey crisp") and t.foo == "bar")
             ]
 
             for test_name, kwargs, condition in tests:
