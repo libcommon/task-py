@@ -2,7 +2,7 @@ name: Run Pylint, Mypy, and unittests
 on:
     push:
         paths:
-            - '*.py'
+            - "*.py"
 jobs:
     run_tests:
         strategy:
@@ -31,17 +31,20 @@ jobs:
               if: steps.venv-cache.outputs.cache-hit != "true"
               run: python -m venv venv
 
-            - name: Enter Python virtual environment
+            - name: Enter Python virtual environment (ubuntu)
+              if: ${{ matrix.os }} == "ubuntu-latest"
               run: source venv/bin/activate
+
+            - name: Enter Python virtual environment (windows)
+              if: ${{ matrix.os }} == "windows-latest"
+              run: .\venv\bin\activate.ps1
 
             - name: Install dependencies
               if: steps.venv-cache.outputs.cache-hit != "true"
-              run: |
-                pip install -r requirements.txt
-                pip install -r requirements-dev.txt
+              run: pip install -r requirements-dev.txt
 
             - name: Run Pylint and Mypy
-              run: ./scripts/run-lint.sh argparse_utils.py task.py
+              run: ./scripts/run-lint.sh "*.py"
 
             - name: Run unittests
-              run: ./scripts/run-tests.sh argparse_utils.py task.py
+              run: ./scripts/run-tests.sh "*.py"
