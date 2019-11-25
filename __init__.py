@@ -26,4 +26,3 @@ from .task import Task, TaskResult, CLITask
 
 
 __author__ = "libcommon"
-__version__ = "0.1.0"
