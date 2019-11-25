@@ -10,3 +10,7 @@
 # Vim swap files
 *.swp
 *.swo
+
+# Ignore Coverage files
+.coverage
+htmlcov
