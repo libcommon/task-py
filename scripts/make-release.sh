@@ -36,7 +36,7 @@ do
     fi
 done 
 
-for DIRECTORY in "__pycache__" ".mypy_cache" "scripts" "venv"
+for DIRECTORY in "__pycache__" ".mypy_cache" "scripts"
 do
     if [ -d $DIRECTORY ]
     then
