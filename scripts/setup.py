@@ -1,5 +1,4 @@
-#!/usr/bin/env sh
-## remove-tests.sh
+## setup.py
 ##
 ## Copyright (c) 2019 libcommon
 ##
@@ -22,20 +21,31 @@
 ## SOFTWARE.
 
 
-if [ $# -lt 1 ]
-then
-    echo "::: ERROR: Must supply at least one file to remove tests from"
-    exit 1
-fi
+import os
+import setuptools
 
-PATTERN='if os.environ.get("ENVIRONMENT") == "TEST"'
+if os.path.isfile("README.md"):
+    with open("README.md", "r") as readme:
+        long_description = readme.read()
+else:
+    long_description = ""
 
-if [ -x $(which gsed) ]
-then
-    COMMAND="gsed"
-else
-    COMMAND="sed"
-fi
 
-echo "::: INFO: Removing tests from ${@}"
-$COMMAND -i'' -n -e "/${PATTERN}/q;p" "${@}"
+setuptools.setup(
+    name="PACKAGE_NAME",
+    version="PACKAGE_VERSION",
+    author="libcommon",
+    author_email="libcommon@protonmail.com",
+    description="PACKAGE_SHORT_DESCRIPTION",
+    long_description=long_description,
+    long_description_content_type="text/markdown",
+    url="PACKAGE_CODE_URL",
+    packages=setuptools.find_packages(),
+    classifiers=[
+        "Intended Audience :: Developers",
+        "Programming Language :: Python :: 3",
+        "License :: OSI Approved :: MIT License",
+        "Operating System :: OS Independent",
+    ],
+    python_requires='>=PACKAGE_MIN_PYTHON_VERSION',
+)

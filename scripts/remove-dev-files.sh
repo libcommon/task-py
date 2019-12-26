@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-## make-release.sh
+## remove-dev-files.sh
 ##
 ## Copyright (c) 2019 libcommon
 ##
@@ -21,13 +21,7 @@
 ## OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ## SOFTWARE.
 
-
-if [ $# -ge 1 ]
-then
-    ./scripts/remove-tests.sh "${@}"
-fi
-
-for FILENAME in "pylintrc" "requirements-dev.txt"
+for FILENAME in "pylintrc" "requirements-dev.txt" "setup.py"
 do
     if [ -f $FILENAME ]
     then
@@ -36,11 +30,15 @@ do
     fi
 done 
 
-for DIRECTORY in "__pycache__" ".mypy_cache" "scripts"
+for DIRECTORY in "__pycache__" ".mypy_cache" "build" "\.egg-info"
 do
-    if [ -d $DIRECTORY ]
-    then
-        echo "::: INFO: Removing $DIRECTORY"
-        rm -rf $DIRECTORY
-    fi
-done 
+    find . -iregex ".*${DIRECTORY}.*" -type d | \
+        while read DIRECTORY_PATH
+        do
+            echo "::: INFO: Removing ${DIRECTORY_PATH}"
+            rm -rf "${DIRECTORY_PATH}"
+        done
+done
+
+echo "::: INFO: Removing scripts directory"
+rm -rf scripts
