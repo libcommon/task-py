@@ -26,3 +26,4 @@ from .task import Task, TaskResult
 
 
 __author__ = "libcommon"
+__version__ = "0.2.0"
