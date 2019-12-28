@@ -23,14 +23,13 @@
 
 if [ $# -lt 2 ]
 then
-    echo "usage: make-pip-release.sh version file ..."
+    echo "usage: make-pip-release.sh version"
     echo
     echo "Prepare source files for release and generate wheel file."
     echo "NOTE: Should _not_ be run in a virtual environment"
     echo
     echo "positional arguments:"
     echo "version   Release version (should follow semver)"
-    echo "file      One or more source files to include in release"
     echo
     exit 1
 fi
@@ -42,14 +41,22 @@ PACKAGE_DESCRIPTION="Python library for implementing arbitrary tasks with suppor
 PACKAGE_CODE_URL="https:\/\/github.com\/libcommon\/task-py"
 PACKAGE_MIN_PYTHON_VERSION="3.6"
 
+# Ensure package directory exists
+if ! [ -d "${PACKAGE_NAME}" ]
+then
+    echo "::: ERROR: Package directory ${PACKAGE_NAME} does not exist"
+    exit 1
+fi
+
 # Remove tests from source file(s)
-./scripts/remove-tests.sh "${@}"
+./scripts/remove-tests.sh "${PACKAGE_NAME}/"
 
-echo "::: INFO: Creating package directory ${PACKAGE_NAME}"
-mkdir "${PACKAGE_NAME}"
-
-echo "::: INFO: Copying source file(s) to package directory: ${@}"
-cp -r "${@}" "${PACKAGE_NAME}"
+# Copy LICENSE file to package directory if exists
+if [ -f 'LICENSE' ]
+then
+    echo "::: INFO: Copying LICENSE file to package directory"
+    cp 'LICENSE' "${PACKAGE_NAME}"
+fi
 
 echo "::: INFO: Generating Setuptools setup.py file"
 cat ./scripts/setup.py | \
@@ -64,8 +71,5 @@ chmod 744 setup.py
 echo "::: INFO: Generating universal wheel file to dist directory"
 python3 setup.py bdist_wheel --universal
 
-## # Remove development files
-## ./scripts/remove-dev-files.sh
-## 
-## echo "::: INFO: Removing build directory"
-## rm -rf "${PACKAGE_NAME}"
+# Remove development files
+./scripts/remove-dev-files.sh
