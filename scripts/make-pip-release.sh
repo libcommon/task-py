@@ -21,7 +21,7 @@
 ## OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ## SOFTWARE.
 
-if [ $# -lt 2 ]
+if [ $# -lt 1 ]
 then
     echo "usage: make-pip-release.sh version"
     echo
@@ -41,6 +41,9 @@ PACKAGE_DESCRIPTION="Python library for implementing arbitrary tasks with suppor
 PACKAGE_CODE_URL="https:\/\/github.com\/libcommon\/task-py"
 PACKAGE_MIN_PYTHON_VERSION="3.6"
 
+BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)
+TAG_NAME="v${PACKAGE_VERSION}"
+
 # Ensure package directory exists
 if ! [ -d "${PACKAGE_NAME}" ]
 then
@@ -49,14 +52,7 @@ then
 fi
 
 # Remove tests from source file(s)
-./scripts/remove-tests.sh "${PACKAGE_NAME}/"
-
-# Copy LICENSE file to package directory if exists
-if [ -f 'LICENSE' ]
-then
-    echo "::: INFO: Copying LICENSE file to package directory"
-    cp 'LICENSE' "${PACKAGE_NAME}"
-fi
+./scripts/remove-tests.sh "${PACKAGE_NAME}"
 
 echo "::: INFO: Generating Setuptools setup.py file"
 cat ./scripts/setup.py | \
@@ -68,8 +64,28 @@ cat ./scripts/setup.py | \
         -e "s/PACKAGE_MIN_PYTHON_VERSION/${PACKAGE_MIN_PYTHON_VERSION}/g" > setup.py
 chmod 744 setup.py
 
-echo "::: INFO: Generating universal wheel file to dist directory"
-python3 setup.py bdist_wheel --universal
+echo "::: INFO: Generating source distribution to dist directory"
+python3 setup.py sdist
+
+echo "::: INFO: Generating 'pure' wheel file to dist directory"
+python3 setup.py bdist_wheel
 
 # Remove development files
 ./scripts/remove-dev-files.sh
+
+# Add the distribution files to source control
+echo "::: INFO: Adding distribution files to source control"
+git add setup.py dist/
+
+# Commit changes
+echo "::: INFO: Committing release"
+git commit -am "Made release ${PACKAGE_VERSION}"
+
+# Create local tag for release
+echo "::: INFO: Creating local tag for release (${TAG_NAME})"
+git tag -m "Release ${TAG_NAME}" -a "${TAG_NAME}"
+
+# Push commit and tag to remote
+echo "::: INFO: Pushing release to remote"
+git push origin "${BRANCH_NAME}"
+git push origin "${TAG_NAME}"

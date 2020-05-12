@@ -1,3 +1,4 @@
-coverage==4.5.4
-pylint==2.4.3
-mypy==0.740
+coverage==5.1
+pylint==2.5.2
+mypy==0.770
+wheel==0.34.2
