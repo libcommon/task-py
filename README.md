@@ -131,24 +131,20 @@ some columns.  There are two clear steps in this pipeline:
 ```python
 import csv
 from pathlib import Path
-from typing import List, TextIO
+from typing import List, Optional, TextIO
 
 from lc_task import CLITask, Task, TaskResult
 
 
 class CSVColumnRemovalTask(Task):
-    """"""
+    """Remove specified columns from frows in a CSV."""
     __slots__ = ("columns", "input_file", "reader")
 
-    def __init__(self, *args, columns: List[str] = None, **kwargs) -> None:
+    def __init__(self, *args, columns: Optional[List[str]] = None, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.columns = columns
 
     def _perform_task(self) -> None:
-        for attribute in ["columns", "input_file", "reader"]:
-            if not getattr(self, attribute):
-                raise ValueError("must have {} attribute".format(attribute))
-
         for record in reader:
             for column in self.columns:
                 del record[column]
@@ -161,7 +157,7 @@ class CSVColumnRemovalTask(Task):
 class CSVReaderTaskResult(TaskResult):
     __slots__ = ("input_file", "reader")
 
-    def __init__(self: input_file: TextIO = None, reader: csv.DictReader = None, **kwargs) -> None:
+    def __init__(self: input_file: Optional[TextIO] = None, reader: Optional[csv.DictReader] = None, **kwargs) -> None:
         super().__init__(**kwargs)
         self.input_file = input_file
         self.reader = reader
@@ -175,7 +171,7 @@ class CSVReaderTask(Task):
     def gen_task_result() -> TaskResult:
         return CSVReaderTaskResult()
 
-    def __init__(self, *args, input_path: Path = None, **kwargs) -> None:
+    def __init__(self, *args, input_path: Optional[Path] = None, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.input_path = input_path
 
