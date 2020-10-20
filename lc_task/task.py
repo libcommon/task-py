@@ -195,7 +195,7 @@ class Task:
         if name in {"result", "state"}:
             return
         # Else if name corresponds to field defined on class, set value on field
-        if hasattr(self, name):
+        if hasattr(type(self), name):
             setattr(self, name, value)
         # Otherwise, merge into state
         else:
