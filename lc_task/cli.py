@@ -194,7 +194,7 @@ if os.environ.get("ENVIRONMENT") == "TEST":
 
 
     class FishTask(CLITask):
-        __slots__ = ()
+        __slots__ = ("region",)
 
         COMMAND = "fish"
         DESCRIPTION = "Fish task"
@@ -236,6 +236,14 @@ if os.environ.get("ENVIRONMENT") == "TEST":
                 task_state = WormsTask.run_command(argv=argv, known_args=True)
                 self.assertEqual("Lumbricus", task_state.get("genus"))
                 self.assertEqual("terrestris", task_state.get("species"))
+
+        def test_clitask_run_command_attribute_arg(self):
+            # NOTE: Patched CLITask.run to return the task itself
+            with mock.patch.object(CLITask, "run", lambda self: self):
+                argv = ["Sagarmatha", "--fresh-water"]
+                task = FishTask.run_command(argv=argv)
+                self.assertEqual("Sagarmatha", task.region)
+                self.assertEqual(True, task.state.get("fresh_water"))
 
         def test_gen_cli_parser(self):
             root_parser = ArgumentParser(add_help=False)
