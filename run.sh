@@ -116,8 +116,8 @@ run-command() {
         then
             run-${COMMAND} "${@}"
         elif ( \
-            [ "${COMMAND}" = "build" ] \
-            || [ "${COMMAND}" = "check" ] \
+            [ "${COMMAND}" = "check" ] \
+            || [ "${COMMAND}" = "poetry-build" ] \
             || [ "${COMMAND}" = "test" ] \
         )
         then
@@ -145,16 +145,15 @@ run-command() {
 ####################
 
 run-build() {
-    run-fmt-check
+    run-command fmt-check
 
-    run-check
+    run-command check
 
-    run-lint
+    run-command lint
 
-    run-test
+    run-command test
 
-    info "Creating distribution packages"
-    poetry build
+    run-command poetry-build
 }
 
 run-check() {
@@ -342,11 +341,18 @@ run-make-docs() {
     mv docs/v${CURRENT_VERSION}/html/* "docs/v${CURRENT_VERSION}/"
 }
 
+run-poetry-build() {
+    info "Creating distribution packages"
+    poetry build
+}
+
 run-publish() {
     run-command build
 
     run-activate-environment ${DEFAULT_PYTHON_VERSION}
     run-preamble
+
+    run-poetry-build
 
     info "Creating and publishing distribution packages to PyPI"
     poetry publish
