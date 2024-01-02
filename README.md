@@ -1,4 +1,4 @@
-# `task-py`
+# task-py: Python Task Execution Framework
 
 ## Overview
 
@@ -11,13 +11,13 @@ writing interoperable, composable tools.
 
 ## Installation
 
-### Install from PyPi (preferred method)
+### Install from PyPI (preferred method)
 
 ```bash
-pip install lc-task
+pip install lc_task
 ```
 
-### Install from GitHub with Pip
+### Install Directly with Pip and Git
 
 ```bash
 pip install git+https://github.com/libcommon/task-py.git@vx.x.x#egg=lc_task
@@ -25,21 +25,18 @@ pip install git+https://github.com/libcommon/task-py.git@vx.x.x#egg=lc_task
 
 where `x.x.x` is the version you want to download.
 
-## Install by Manual Download
-
-To download the source distribution and/or wheel files, navigate to
-`https://github.com/libcommon/task-py/tree/releases/vx.x.x/dist`, where `x.x.x` is the version you want to install,
-and download either via the UI or with a tool like wget. Then to install run:
+### Install from Cloned Repo
 
 ```bash
-pip install <downloaded file>
+git clone ssh://git@github.com/libcommon/task-py.git && \
+    cd task-py && \
+    pip install .
 ```
-
-Do _not_ change the name of the file after downloading, as Pip requires a specific naming convention for installation files.
 
 ## Dependencies
 
-`task-py` does not have external dependencies. Only Python versions >= 3.6 are officially supported.
+The `tool.poetry.*dependencies` sections in [pyproject.toml](pyproject.toml) contain the app and dev dependencies.
+See [DEVELOPMENT.md](DEVELOPMENT.md) for local development and build dependencies.
 
 ## Getting Started
 
@@ -109,21 +106,20 @@ if __name__ == "__main__":
     CatFileTask.run_command()
 ```
 
-For defining more complex, hierarchical command line interfaces with subcommands, take a look at the docstring
-for `cli.gen_cli_parser`. It allows you to define your command line app with a mapping of commands to actions,
-then generates the CLI for you.
+For defining more complex, hierarchical command line interfaces with subcommands, look at the documentation for `cli.gen_cli_parser`.
+It allows you to define your command line app with a mapping of commands to actions, then generates the CLI for you.
 
 ### Pipelines and Message Passing
 
 Anyone who has used Bash, PowerShell, or other scripting languages is familiar with the idea of composability and pipes:
 writing simple commands that return structured data recognized by other commands can be very powerful.  Python does not
 support this style of programming out of the box, but it does support overloading operators for custom types, such as the
-bitwise or operator (`|`).  In Python, the [`__ror__` builtin method](https://docs.python.org/3/reference/datamodel.html#emulating-numeric-types)
+bitwise or operator (`|`).  In Python, the [`__ror__` builtin method](https://docs.python.org/3/reference/datamodel.html#object.__or__)
 is called when using the bitwise or operator on two objects where the first (left side) doesn't implement `__or__`.
 
 `task-py` takes advantage of this flexibility to allow piping `Task`s together to create pipelines. For example, suppose
-you were writing a CSV handing toolkit and wanted to createa a command line app that reads data from a CSV and removes
-some columns.  There are two clear steps in this pipeline:
+you were writing a CSV handing toolkit and wanted to create a command line app that reads data from a CSV and removes some columns.
+There are two clear steps in this pipeline:
 
 1. Read data from the CSV into some data structure
 2. Remove specified columns (and write to stdout)
@@ -210,8 +206,11 @@ if __name__ == "__main__":
     RemoveColumnsCLITask.run_command()
 ```
 
+## Development
+
+See [DEVELOPMENT.md](DEVELOPMENT.md) for development instructions.
+
 ## Contributing/Suggestions
 
-Contributions and suggestions are welcome! To make a feature request, report a bug, or otherwise comment on existing
-functionality, please file an issue. For contributions please submit a PR, but make sure to lint, type-check, and test
-your code before doing so. Thanks in advance!
+Contributions and suggestions are welcome! To make a feature request, report a bug, or otherwise comment on existing functionality, please file an issue.
+For contributions please submit a PR, but make sure to lint, type-check, and test your code before doing so. Thanks in advance!

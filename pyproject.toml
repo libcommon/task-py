@@ -1,0 +1,58 @@
+[tool.poetry]
+name = "task-py"
+version = "0.1.0"
+description = "Python library for implementing arbitrary tasks with support for ArgumentParser."
+authors = ["Libcommon <57610970+libcommon@users.noreply.github.com>"]
+license = "MIT"
+packages = [
+    { include = "lc_task", from = "src" }
+]
+include = [
+    "src/**/py.typed",
+]
+
+[tool.poetry.dependencies]
+# Must include Poetry Python version setting
+python = ">=3.9, <3.12"
+
+[tool.poetry.group.check.dependencies]
+mypy = "^1.8.0"
+
+[tool.poetry.group.fmt.dependencies]
+black = "^23.12.1"
+isort = "^5.13.2"
+
+[tool.poetry.group.lint.dependencies]
+pylint = "^3.0.3"
+
+[tool.poetry.group.test.dependencies]
+pytest = "^7.4.3"
+pytest-cov = "^4.1.0"
+
+[tool.poetry.group.docs.dependencies]
+myst-parser = "^2.0.0"
+sphinx = "^7.2.6"
+sphinx-autodoc-typehints = "^1.25.2"
+sphinx-copybutton = "^0.5.2"
+sphinx-material = "0.0.36"
+
+[tool.black]
+include = "\\.pyi?$"
+line-length = 120
+# Must match PYTHON_VERSIONS setting in config.sh
+target-version = ["py39", "py310", "py311"]
+
+[tool.isort]
+line_length = 120
+# See: https://pycqa.github.io/isort/reference/isort/profiles.html
+profile = "black"
+src_paths = [ "src", "tests" ]
+
+[tool.mypy]
+warn_return_any = true
+warn_unused_ignores = true
+files = [ "src", "tests" ]
+
+[build-system]
+requires = ["poetry-core>=1.8.0"]
+build-backend = "poetry.core.masonry.api"
