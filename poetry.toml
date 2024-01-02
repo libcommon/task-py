@@ -1,0 +1,3 @@
+[virtualenvs]
+in-project = false
+path = "build-support/python/virtualenvs/"
