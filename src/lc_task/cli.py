@@ -1,14 +1,13 @@
 import logging
-import os
 import sys
+import typing
 from argparse import ArgumentParser, Namespace
-from typing import Any, Dict, List, Optional, Tuple, Type, Union
 
 from .task import Task, TaskResult
 
 __author__ = "libcommon"
-logger = logging.getLogger(__name__)  # pylint: disable=C0103
-CLIParserConfig = Dict[Union[Type[Task], Tuple[str, str]], Optional[Any]]
+logger = logging.getLogger(__name__)
+CLIParserConfig = typing.Dict[typing.Union[typing.Type[Task], typing.Tuple[str, str]], typing.Optional[typing.Any]]
 
 
 class CLITask(Task):  # pylint: disable=abstract-method
@@ -18,11 +17,12 @@ class CLITask(Task):  # pylint: disable=abstract-method
 
     __slots__ = ()
 
-    COMMAND: Optional[str] = None
-    DESCRIPTION: Optional[str] = None
+    # TODO: change these to lowercase in next breaking version
+    COMMAND: typing.ClassVar[typing.Optional[str]] = None  # pylint: disable=invalid-name
+    DESCRIPTION: typing.ClassVar[typing.Optional[str]] = None  # pylint: disable=invalid-name
 
     @classmethod
-    def __run_command(cls, args: Namespace) -> Optional[TaskResult]:
+    def __run_command(cls, args: Namespace) -> typing.Optional[TaskResult]:
         """
         Args:
             args    => parsed command line arguments
@@ -38,7 +38,7 @@ class CLITask(Task):  # pylint: disable=abstract-method
         return cls().merge_object(args).run()
 
     @classmethod
-    def gen_command_parser(cls, parser: Optional[ArgumentParser] = None) -> ArgumentParser:
+    def gen_command_parser(cls, parser: typing.Optional[ArgumentParser] = None) -> ArgumentParser:
         """
         Args:
             parser  => argument parser to add arguments to (default: None)
@@ -58,8 +58,8 @@ class CLITask(Task):  # pylint: disable=abstract-method
 
     @classmethod
     def run_command(
-        cls, argv: List[str] = sys.argv, known_args: bool = False
-    ) -> Optional[TaskResult]:  # pylint: disable=dangerous-default-value
+        cls, argv: typing.List[str] = sys.argv, known_args: bool = False
+    ) -> typing.Optional[TaskResult]:  # pylint: disable=dangerous-default-value
         """
         Args:
             argv        => command line args
@@ -107,7 +107,7 @@ def gen_cli_parser(root_parser: ArgumentParser, parser_config: CLIParserConfig) 
     Preconditions:
         N/A
     Raises:
-        TypeError: if subcommand doesn't conform to type CLIParserConfig
+        typing.TypeError: if subcommand doesn't conform to type CLIParserConfig
     """
     # If parser config isn't empty dictionary
     if bool(parser_config):
@@ -132,7 +132,7 @@ def gen_cli_parser(root_parser: ArgumentParser, parser_config: CLIParserConfig) 
                 # Add configuration for subcommand
                 subcommand_parser = subcommand.gen_command_parser(subcommand_parser)
             else:
-                raise TypeError("invalid subcommand type {}".format(type(subcommand)))
+                raise TypeError(f"invalid subcommand type {type(subcommand)}")
             # If subparser_config defined, generate subcommand parsers
             if bool(subparser_config):
                 gen_cli_parser(subcommand_parser, subparser_config)  # type: ignore

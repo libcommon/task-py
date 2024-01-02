@@ -1,7 +1,8 @@
+# pylint: disable=invalid-name,missing-class-docstring,missing-function-docstring
 import typing
 import unittest
-import unittest.mock as mock
 from argparse import ArgumentParser, Namespace
+from unittest import mock
 
 from lc_task.cli import CLITask, gen_cli_parser
 
@@ -95,52 +96,52 @@ class TestCLITask(unittest.TestCase):
         root_parser.set_defaults(func=print_help)
 
         tests = [
-            ("Root parser only", dict(), ["--level", "DEBUG"], Namespace(log_level="DEBUG", func=print_help)),
+            ("Root parser only", {}, ["--level", "DEBUG"], Namespace(log_level="DEBUG", func=print_help)),
             (
                 "Single subcommand - depth of 1",
-                {WormsTask: dict()},
+                {WormsTask: {}},
                 ["worms", "Lumbricus", "terrestris"],
                 Namespace(
                     log_level="INFO",
                     genus="Lumbricus",
                     species="terrestris",
                     subcommand="worms",
-                    func=WormsTask._CLITask__run_command,
+                    func=WormsTask._CLITask__run_command,  # pylint: disable=no-member,protected-access
                 ),
-            ),  # pylint: disable=no-member
+            ),
             (
                 "Two subcommands, depth of 1",
-                {WormsTask: dict(), ArthropodsTask: dict()},
+                {WormsTask: {}, ArthropodsTask: {}},
                 ["--level", "WARNING", "arthropods", "Palaemonias", "ganteri"],
                 Namespace(
                     log_level="WARNING",
                     genus="Palaemonias",
                     species="ganteri",
                     subcommand="arthropods",
-                    func=ArthropodsTask._CLITask__run_command,
+                    func=ArthropodsTask._CLITask__run_command,  # pylint: disable=no-member,protected-access
                 ),
-            ),  # pylint: disable=no-member
+            ),
             (
                 "Three subcommands, with tuples, depth of 2",
-                {("invertebrates", "Invertebrate animals"): {WormsTask: dict(), ArthropodsTask: dict()}},
+                {("invertebrates", "Invertebrate animals"): {WormsTask: {}, ArthropodsTask: {}}},
                 ["invertebrates", "arthropods", "Neotibicen", "linnei"],
                 Namespace(
                     log_level="INFO",
                     genus="Neotibicen",
                     species="linnei",
                     subcommand="arthropods",
-                    func=ArthropodsTask._CLITask__run_command,
+                    func=ArthropodsTask._CLITask__run_command,  # pylint: disable=no-member,protected-access
                 ),
-            ),  # pylint: disable=no-member
+            ),
             (
                 "Five subcommands, with tuples, depth of 2",
                 {
                     ("invertebrates", "Invertebrate animals"): {
-                        WormsTask: dict(),
-                        ArthropodsTask: dict(),
+                        WormsTask: {},
+                        ArthropodsTask: {},
                     },
                     ("vertebrates", "Vertebrate animals"): {
-                        FishTask: dict(),
+                        FishTask: {},
                     },
                 },
                 ["vertebrates", "fish", "Canada", "--fresh-water"],
@@ -149,9 +150,9 @@ class TestCLITask(unittest.TestCase):
                     region="Canada",
                     fresh_water=True,
                     subcommand="fish",
-                    func=FishTask._CLITask__run_command,
+                    func=FishTask._CLITask__run_command,  # pylint: disable=no-member,protected-access
                 ),
-            ),  # pylint: disable=no-member
+            ),
         ]
 
         with mock.patch.object(ArgumentParser, "exit"):

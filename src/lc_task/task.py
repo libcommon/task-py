@@ -1,21 +1,28 @@
 import logging
-import os
+import typing
 from argparse import Namespace
-from typing import Any, ClassVar, Dict, Optional, Set, Tuple, TypeVar, Union
 
 __author__ = "libcommon"
 logger = logging.getLogger(__name__)  # pylint: disable=C0103
-StatePropogationSource = TypeVar("StatePropogationSource", Dict[str, Any], Optional["TaskResult"], Namespace, "Task")
+StatePropogationSource = typing.TypeVar(
+    "StatePropogationSource",
+    typing.Dict[str, typing.Any],
+    typing.Optional["TaskResult"],
+    Namespace,
+    "Task",
+)
 
 
-def _gen_pairs_from_slots_object(obj: Union["Task", "TaskResult"]) -> Tuple[Tuple[str, Any], ...]:
+def _gen_pairs_from_slots_object(
+    obj: typing.Union["Task", "TaskResult"]
+) -> typing.Tuple[typing.Tuple[str, typing.Any], ...]:
     """Generate tuple of attribute name-value pairs from object that defines
     the __slots__ variable.
     Raises:
         TypeError: if obj doesn't define __slots__
     """
     if not hasattr(obj, "__slots__"):
-        raise TypeError("{} does not define __slots__".format(type(obj).__name__))
+        raise TypeError(f"{type(obj).__name__} does not define __slots__")
     return tuple(
         (attr_name, getattr(obj, attr_name))
         for attr_name in dir(obj)
@@ -23,13 +30,15 @@ def _gen_pairs_from_slots_object(obj: Union["Task", "TaskResult"]) -> Tuple[Tupl
     )
 
 
-def _gen_pairs_from_object(obj: StatePropogationSource) -> Union[Tuple[()], Tuple[Tuple[str, Any], ...]]:
+def _gen_pairs_from_object(
+    obj: StatePropogationSource,
+) -> typing.Union[typing.Tuple[()], typing.Tuple[typing.Tuple[str, typing.Any], ...]]:
     """Generate tuple of attribute name-value pairs from supported types.
     Raises:
         TypeError: If obj is not a supported type
     """
     if obj is None:
-        items: Union[Tuple[()], Tuple[Tuple[str, Any], ...]] = tuple()
+        items: typing.Union[typing.Tuple[()], typing.Tuple[typing.Tuple[str, typing.Any], ...]] = tuple()
     elif isinstance(obj, dict):
         items = tuple(obj.items())
     elif isinstance(obj, Namespace):
@@ -40,7 +49,7 @@ def _gen_pairs_from_object(obj: StatePropogationSource) -> Union[Tuple[()], Tupl
     elif isinstance(obj, TaskResult):
         items = _gen_pairs_from_slots_object(obj)
     else:
-        raise TypeError("Cannot generate name-value pairs from type {}".format(type(obj).__name__))
+        raise TypeError(f"Cannot generate name-value pairs from type {type(obj).__name__}")
     return items
 
 
@@ -52,7 +61,7 @@ class TaskResult:
 
     __slots__ = ("err",)
 
-    def __init__(self, err: Optional[Exception] = None) -> None:
+    def __init__(self, err: typing.Optional[Exception] = None) -> None:
         self.err = err
 
 
@@ -64,7 +73,8 @@ class Task:
 
     __slots__ = ("state", "result")
 
-    _EXCLUDE_FROM_MERGE: ClassVar[Set[str]] = set()
+    # TODO: change to lowercase in next breaking version
+    _EXCLUDE_FROM_MERGE: typing.ClassVar[typing.Set[str]] = set()  # pylint: disable=invalid-name
 
     @staticmethod
     def gen_task_result() -> TaskResult:
@@ -82,9 +92,11 @@ class Task:
         """
         return TaskResult()
 
-    def __init__(self, state: Optional[Dict[str, Any]] = None, result: Optional[TaskResult] = None) -> None:
-        self.state: Optional[Dict[str, Any]] = state
-        self.result: Optional[TaskResult] = result
+    def __init__(
+        self, state: typing.Optional[typing.Dict[str, typing.Any]] = None, result: typing.Optional[TaskResult] = None
+    ) -> None:
+        self.state: typing.Optional[typing.Dict[str, typing.Any]] = state
+        self.result: typing.Optional[TaskResult] = result
 
     def _postamble(self) -> None:
         """
@@ -109,7 +121,7 @@ class Task:
         Preconditions:
             N/A
         """
-        raise NotImplementedError("_perform_task not implemented for {}".format(type(self).__name__))
+        raise NotImplementedError(f"_perform_task not implemented for {type(self).__name__}")
 
     def _preamble(self) -> None:
         """
@@ -124,7 +136,7 @@ class Task:
             N/A
         """
 
-    def run(self) -> Optional[TaskResult]:
+    def run(self) -> typing.Optional[TaskResult]:
         """
         Args:
             N/A
@@ -136,16 +148,16 @@ class Task:
             See: _perform_task
         """
         task_type = type(self).__name__
-        logger.info("Running task {}".format(task_type))
+        logger.info("Running task %s", task_type)
         # Run preamble
         self._preamble()
         try:
             # Run the task
             self._perform_task()
-            logger.info("Finished running task {}".format(task_type))
+            logger.info("Finished running task %s", task_type)
         except Exception as exc:
             # If failed to run task, set err on result
-            logger.error("Failed to run task {} ({})".format(task_type, exc))
+            logger.error("Failed to run task %s (%s)", task_type, exc)
             if self.result is None:
                 self.result = self.gen_task_result()
             self.result.err = exc
@@ -153,7 +165,7 @@ class Task:
         self._postamble()
         return self.result
 
-    def _merge_value_with_name(self, name: str, value: Any) -> None:
+    def _merge_value_with_name(self, name: str, value: typing.Any) -> None:
         """
         Args:
             name    => name of field to set value on
@@ -175,15 +187,15 @@ class Task:
         # Otherwise, merge into state
         else:
             if self.state is None:
-                self.state = dict()
+                self.state = {}
             self.state[name] = value
 
     def merge_object(
         self,
         obj: StatePropogationSource,
-        include: Optional[Set[str]] = None,
-        exclude: Optional[Set[str]] = None,
-        overwrite: Optional[Dict[str, Any]] = None,
+        include: typing.Optional[typing.Set[str]] = None,
+        exclude: typing.Optional[typing.Set[str]] = None,
+        overwrite: typing.Optional[typing.Dict[str, typing.Any]] = None,
     ) -> "Task":
         """
         Args:
@@ -207,7 +219,7 @@ class Task:
         """
         # Generate items iterable based on type of obj
         items = _gen_pairs_from_object(obj)
-        # Set whether exclude and include given
+        # typing.Set whether exclude and include given
         exclude_given = bool(exclude)
         include_given = bool(include)
         # If exclude is defined, takes precedence over include
@@ -236,7 +248,7 @@ class Task:
                 self._merge_value_with_name(name, value)
         return self
 
-    def __ror__(self, task_result: Optional[TaskResult]) -> Optional[TaskResult]:
+    def __ror__(self, task_result: typing.Optional[TaskResult]) -> typing.Optional[TaskResult]:
         """
         Args:
             task_result => result from another task

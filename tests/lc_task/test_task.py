@@ -1,6 +1,7 @@
+# pylint: disable=missing-class-docstring,missing-function-docstring
 import unittest
-import unittest.mock as mock
 from argparse import Namespace
+from unittest import mock
 
 from lc_task import Task, TaskResult
 from lc_task.task import _gen_pairs_from_object, _gen_pairs_from_slots_object
@@ -42,7 +43,7 @@ class TestTaskAndUtilityMethods(unittest.TestCase):
                 self.assertEqual(tuple(sorted(expected)), tuple(sorted(_gen_pairs_from_slots_object(input_object))))
 
     def test_gen_pairs_from_object(self):
-        test_state = dict(foo="bar", bar="foo")
+        test_state = {"foo": "bar", "bar": "foo"}
         task_with_state = Task()
         task_with_state.state = dict(test_state)
 
@@ -54,7 +55,7 @@ class TestTaskAndUtilityMethods(unittest.TestCase):
             (
                 "Task with state",
                 task_with_state,
-                (("state", dict(foo="bar", bar="foo")), ("result", None), ("foo", "bar"), ("bar", "foo")),
+                (("state", {"foo": "bar", "bar": "foo"}), ("result", None), ("foo", "bar"), ("bar", "foo")),
             ),
             ("TaskResult", TaskResult(), (("err", None),)),
         ]
@@ -67,9 +68,9 @@ class TestTaskAndUtilityMethods(unittest.TestCase):
         task = Task1()
 
         tests = [
-            ("Merging name state", ("state", dict(name="Charlie")), None),
+            ("Merging name state", ("state", {"name": "Charlie"}), None),
             ("Merging name result", ("result", TaskResult()), None),
-            ("Merging name bar to state", ("bar", "foo"), dict(bar="foo")),
+            ("Merging name bar to state", ("bar", "foo"), {"bar": "foo"}),
         ]
 
         for test_name, input_object, expected in tests:
@@ -85,20 +86,20 @@ class TestTaskAndUtilityMethods(unittest.TestCase):
 
     def test_task_merge_object(self):
         task_to_merge = Task1(foo="kitchen")
-        task_to_merge.state = dict(color="orange")
-        test_state = dict(foo="barrio", bar="foo")
+        task_to_merge.state = {"color": "orange"}
+        test_state = {"foo": "barrio", "bar": "foo"}
 
         tests = [
             ("None", None, lambda t: t.state is None and t.foo == "bar"),
-            ("Dict[str, Any]", test_state, lambda t: t.state == dict(bar="foo") and t.foo == "barrio"),
+            ("Dict[str, Any]", test_state, lambda t: t.state == {"bar": "foo"} and t.foo == "barrio"),
             (
                 "Namespace",
                 Namespace(apple="granny smith", foo="barrio"),
-                lambda t: t.state == dict(apple="granny smith") and t.foo == "barrio",
+                lambda t: t.state == {"apple": "granny smith"} and t.foo == "barrio",
             ),
             ("Task without state", Task1(foo="bandito"), lambda t: t.state is None and t.foo == "bandito"),
-            ("Task with state", task_to_merge, lambda t: t.state == dict(color="orange") and t.foo == "kitchen"),
-            ("TaskResult", TaskResult1(foo="barrio"), lambda t: t.state == dict(err=None) and t.foo == "barrio"),
+            ("Task with state", task_to_merge, lambda t: t.state == {"color": "orange"} and t.foo == "kitchen"),
+            ("TaskResult", TaskResult1(foo="barrio"), lambda t: t.state == {"err": None} and t.foo == "barrio"),
         ]
 
         for test_name, input_object, condition in tests:
@@ -108,38 +109,38 @@ class TestTaskAndUtilityMethods(unittest.TestCase):
     def test_task_merge_object_include_exclude(self):
         class TestTaskWithExclude(Task):  # pylint: disable=abstract-method
             __slots__ = ()
-            _EXCLUDE_FROM_MERGE = {"color"}
+            _EXCLUDE_FROM_MERGE = {"color"}  # pylint: disable=invalid-name
 
-        dict_to_merge = dict(bar="foo", color="red", apple="honey crisp")
+        dict_to_merge = {"bar": "foo", "color": "red", "apple": "honey crisp"}
 
         tests = [
-            ("Include not in dict", dict(include={"foo"}), lambda t: t.state is None and t.foo == "bar"),
-            ("Include in dict (bar)", dict(include={"bar"}), lambda t: t.state == dict(bar="foo") and t.foo == "bar"),
+            ("Include not in dict", {"include": {"foo"}}, lambda t: t.state is None and t.foo == "bar"),
+            ("Include in dict (bar)", {"include": {"bar"}}, lambda t: t.state == {"bar": "foo"} and t.foo == "bar"),
             (
                 "Include in dict (bar, color)",
-                dict(include={"bar", "color"}),
-                lambda t: t.state == dict(bar="foo", color="red") and t.foo == "bar",
+                {"include": {"bar", "color"}},
+                lambda t: t.state == {"bar": "foo", "color": "red"} and t.foo == "bar",
             ),
-            ("Exclude not in dict", dict(exclude={"foo"}), lambda t: t.state == dict_to_merge and t.foo == "bar"),
+            ("Exclude not in dict", {"exclude": {"foo"}}, lambda t: t.state == dict_to_merge and t.foo == "bar"),
             (
                 "Exclude in dict (bar)",
-                dict(exclude={"bar"}),
-                lambda t: t.state == dict(color="red", apple="honey crisp") and t.foo == "bar",
+                {"exclude": {"bar"}},
+                lambda t: t.state == {"color": "red", "apple": "honey crisp"} and t.foo == "bar",
             ),
             (
                 "Exclude in dict (bar, color)",
-                dict(exclude={"bar", "color"}),
-                lambda t: t.state == dict(apple="honey crisp") and t.foo == "bar",
+                {"exclude": {"bar", "color"}},
+                lambda t: t.state == {"apple": "honey crisp"} and t.foo == "bar",
             ),
             (
                 "Exclude and include (bar, color)",
-                dict(include={"bar", "color"}, exclude={"bar", "color"}),
-                lambda t: t.state == dict(apple="honey crisp") and t.foo == "bar",
+                {"include": {"bar", "color"}, "exclude": {"bar", "color"}},
+                lambda t: t.state == {"apple": "honey crisp"} and t.foo == "bar",
             ),
             (
                 "Exclude with overwrite",
-                dict(exclude={"bar"}, overwrite=dict(color="purple")),
-                lambda t: t.state == dict(color="purple", apple="honey crisp") and t.foo == "bar",
+                {"exclude": {"bar"}, "overwrite": {"color": "purple"}},
+                lambda t: t.state == {"color": "purple", "apple": "honey crisp"} and t.foo == "bar",
             ),
         ]
 
@@ -151,7 +152,7 @@ class TestTaskAndUtilityMethods(unittest.TestCase):
         with self.subTest(test_name="Exclude with _EXCLUDE_FROM_MERGE"):
             task = TestTaskWithExclude()
             task.merge_object(dict_to_merge)
-            self.assertTrue(task.state == dict(bar="foo", apple="honey crisp"))
+            self.assertTrue(task.state == {"bar": "foo", "apple": "honey crisp"})
 
     def test_task_ror_merge_object(self):
         with mock.patch.object(Task, "run"):
@@ -159,4 +160,4 @@ class TestTaskAndUtilityMethods(unittest.TestCase):
             task_result = TaskResult1(err=err, foo="barrio")
             next_task = Task1()
             (task_result | next_task)  # pylint: disable=pointless-statement
-            self.assertTrue(next_task.state == dict(err=err) and next_task.foo == "barrio")
+            self.assertTrue(next_task.state == {"err": err} and next_task.foo == "barrio")
