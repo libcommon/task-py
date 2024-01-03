@@ -22,9 +22,9 @@ def update_versions_file(args: Namespace) -> int:
     docs_version_path.mkdir(exist_ok=True)
 
     # Find the latest version and create symlink `latest`
-    latest_version_path = [dir_path for dir_path in sorted(docs_root_path.glob("v*")) if dir_path.is_dir()][
-        0
-    ].relative_to(docs_root_path)
+    latest_version_path = [
+        dir_path for dir_path in sorted(docs_root_path.glob("v*"), reverse=True) if dir_path.is_dir()
+    ][0].relative_to(docs_root_path)
     latest_link_path = docs_root_path.joinpath("latest")
     if latest_link_path.is_symlink():
         latest_link_path.unlink()

@@ -338,7 +338,8 @@ run-make-docs() {
         docs/_src/ \
         "docs/v${CURRENT_VERSION}/" \
         "${@}"
-    mv docs/v${CURRENT_VERSION}/html/* "docs/v${CURRENT_VERSION}/"
+    cp -r docs/v${CURRENT_VERSION}/html/* "docs/v${CURRENT_VERSION}/"
+    rm -rf "docs/v${CURRENT_VERSION}/html/"
 }
 
 run-poetry-build() {
