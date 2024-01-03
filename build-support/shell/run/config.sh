@@ -5,7 +5,7 @@ CONTAINER_RUNTIME="docker"
 DEFAULT_COMMAND="build"
 
 # Python versions to install in build container, in priority order
-PYTHON_VERSIONS="3.11.7 3.10.13 3.9.18"
+PYTHON_VERSIONS="3.11.7 3.10.13 3.9.18 3.8.18"
 # Default Python version to use
 DEFAULT_PYTHON_VERSION="3.11.7"
 
