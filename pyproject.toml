@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "task-py"
-version = "0.1.0"
+version = "0.3.0"
 description = "Python library for implementing arbitrary tasks with support for ArgumentParser."
 authors = ["Libcommon <57610970+libcommon@users.noreply.github.com>"]
 license = "MIT"
@@ -13,7 +13,7 @@ include = [
 
 [tool.poetry.dependencies]
 # Must include Poetry Python version setting
-python = ">=3.9, <3.12"
+python = ">=3.8, <3.12"
 
 [tool.poetry.group.check.dependencies]
 mypy = "^1.8.0"
@@ -28,10 +28,15 @@ pylint = "^3.0.3"
 [tool.poetry.group.test.dependencies]
 pytest = "^7.4.3"
 pytest-cov = "^4.1.0"
+pytest-subtests = "^0.11.0"
 
 [tool.poetry.group.docs.dependencies]
 myst-parser = "^2.0.0"
-sphinx = "^7.2.6"
+sphinx = [
+    { version = "^7.2.6", python = ">=3.9" },
+    # See: https://www.sphinx-doc.org/en/master/changes.html#id34
+    { version = "7.1.2", python = "<=3.8" },
+]
 sphinx-autodoc-typehints = "^1.25.2"
 sphinx-copybutton = "^0.5.2"
 sphinx-material = "0.0.36"
@@ -40,7 +45,7 @@ sphinx-material = "0.0.36"
 include = "\\.pyi?$"
 line-length = 120
 # Must match PYTHON_VERSIONS setting in config.sh
-target-version = ["py39", "py310", "py311"]
+target-version = ["py38", "py39", "py310", "py311"]
 
 [tool.isort]
 line_length = 120
