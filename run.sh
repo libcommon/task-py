@@ -49,6 +49,7 @@ run-in-container() {
     ${CONTAINER_RUNTIME} run \
 		--rm \
          ${INTERACTIVE_FLAGS} \
+        -e POETRY_PYPI_TOKEN_PYPI \
 		-u ${USERNAME} \
         -v /var/run/docker.sock:/var/run/docker.sock \
 		-v $(pwd):/project \
@@ -310,7 +311,7 @@ run-make-docs() {
         # the final positional argument, EXCLUDE_PATTERN, ignores any scripts in bin directory
         # (self-documented with CLI parser)
         info "Generating API documentation with the Sphinx autodoc extension for module ${MODULE_NAME}"
-        SPHINX_APIDOC_OPTIONS=members,show-inheritance poetry run sphinx-apidoc \
+        poetry run sphinx-apidoc \
             -M \
             -T \
             -a \
@@ -349,6 +350,7 @@ run-poetry-build() {
 
 run-publish() {
     run-command build
+    rm -rf dist/
 
     run-activate-environment ${DEFAULT_PYTHON_VERSION}
     run-preamble

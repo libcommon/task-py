@@ -409,6 +409,7 @@ disable=
     duplicate-code,
     file-ignored,
     fixme,
+    invalid-field-call,
     locally-disabled,
     missing-module-docstring,
     raw-checker-failed,

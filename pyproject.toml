@@ -1,9 +1,22 @@
 [tool.poetry]
-name = "task-py"
+name = "lc-task"
 version = "0.3.0"
 description = "Python library for implementing arbitrary tasks with support for ArgumentParser."
 authors = ["Libcommon <57610970+libcommon@users.noreply.github.com>"]
+repository = "https://github.com/libcommon/task-py/"
+documentation = "https://libcommon.github.io/task-py/"
+classifiers = [
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
 license = "MIT"
+readme = "README.md"
 packages = [
     { include = "lc_task", from = "src" }
 ]
@@ -54,6 +67,7 @@ profile = "black"
 src_paths = [ "src", "tests" ]
 
 [tool.mypy]
+check_untyped_defs = true
 warn_return_any = true
 warn_unused_ignores = true
 files = [ "src", "tests" ]

@@ -1,26 +1,25 @@
+# mypy: disable-error-code="call-arg"
 # pylint: disable=missing-class-docstring,missing-function-docstring
+import typing
 import unittest
 from argparse import Namespace
 from unittest import mock
 
-from lc_task import Task, TaskResult
+from lc_task import Task, TaskResult, taskclass
 from lc_task.task import _gen_pairs_from_object, _gen_pairs_from_slots_object
 
 
+@taskclass
 class TaskResult1(TaskResult):
-    __slots__ = ("foo",)
-
-    def __init__(self, foo: str = "bar", **kwargs):
-        super().__init__(**kwargs)
-        self.foo = foo
+    foo: str = "bar"
 
 
-class Task1(Task):  # pylint: disable=abstract-method
-    __slots__ = ("foo",)
+@taskclass
+class Task1(Task):
+    foo: str = "bar"
 
-    def __init__(self, foo: str = "bar"):
-        super().__init__()
-        self.foo = foo
+    def _perform_task(self) -> None:
+        pass
 
 
 class TestTaskAndUtilityMethods(unittest.TestCase):
@@ -43,19 +42,22 @@ class TestTaskAndUtilityMethods(unittest.TestCase):
                 self.assertEqual(tuple(sorted(expected)), tuple(sorted(_gen_pairs_from_slots_object(input_object))))
 
     def test_gen_pairs_from_object(self):
-        test_state = {"foo": "bar", "bar": "foo"}
-        task_with_state = Task()
-        task_with_state.state = dict(test_state)
+        task = Task1()
+        task_result = task.result
+        test_dict = {"foo": "baz", "bar": "foo"}
 
         tests = [
             ("None", None, tuple()),
-            ("Dict[str, Any]", test_state, (("foo", "bar"), ("bar", "foo"))),
-            ("Namespace", Namespace(**test_state), (("foo", "bar"), ("bar", "foo"))),
-            ("Task without state", Task(), (("state", None), ("result", None))),
+            ("Dict[str, Any]", test_dict, (("foo", "baz"), ("bar", "foo"))),
+            ("Namespace", Namespace(**test_dict), (("bar", "foo"), ("foo", "baz"))),
             (
-                "Task with state",
-                task_with_state,
-                (("state", {"foo": "bar", "bar": "foo"}), ("result", None), ("foo", "bar"), ("bar", "foo")),
+                "Task",
+                task,
+                (
+                    ("foo", "bar"),
+                    ("raise_exceptions", False),
+                    ("result", task_result),
+                ),
             ),
             ("TaskResult", TaskResult(), (("err", None),)),
         ]
@@ -64,95 +66,75 @@ class TestTaskAndUtilityMethods(unittest.TestCase):
             with self.subTest(test_name=test_name):
                 self.assertEqual(tuple(sorted(expected)), tuple(sorted(_gen_pairs_from_object(input_object))))
 
-    def test_merge_value_with_name_to_state(self):
-        task = Task1()
-
+    def test_task_merge_object(self):
         tests = [
-            ("Merging name state", ("state", {"name": "Charlie"}), None),
-            ("Merging name result", ("result", TaskResult()), None),
-            ("Merging name bar to state", ("bar", "foo"), {"bar": "foo"}),
+            ("None", None, "bar"),
+            ("Dict[str, Any]", {"foo": "barrio", "bar": "foo"}, "barrio"),
+            (
+                "Namespace",
+                Namespace(apple="granny smith", foo="barrio"),
+                "barrio",
+            ),
+            ("Task", Task1(foo="bandito"), "bandito"),
+            ("TaskResult", TaskResult1(foo="barrio"), "barrio"),
         ]
 
         for test_name, input_object, expected in tests:
             with self.subTest(test_name=test_name):
-                name, value = input_object
-                task._merge_value_with_name(name, value)
-                self.assertEqual(expected, task.state)
-
-    def test_merge_value_with_name_to_attribute(self):
-        task = Task1()
-        task._merge_value_with_name("foo", "barrio")
-        self.assertEqual("barrio", task.foo)
-
-    def test_task_merge_object(self):
-        task_to_merge = Task1(foo="kitchen")
-        task_to_merge.state = {"color": "orange"}
-        test_state = {"foo": "barrio", "bar": "foo"}
-
-        tests = [
-            ("None", None, lambda t: t.state is None and t.foo == "bar"),
-            ("Dict[str, Any]", test_state, lambda t: t.state == {"bar": "foo"} and t.foo == "barrio"),
-            (
-                "Namespace",
-                Namespace(apple="granny smith", foo="barrio"),
-                lambda t: t.state == {"apple": "granny smith"} and t.foo == "barrio",
-            ),
-            ("Task without state", Task1(foo="bandito"), lambda t: t.state is None and t.foo == "bandito"),
-            ("Task with state", task_to_merge, lambda t: t.state == {"color": "orange"} and t.foo == "kitchen"),
-            ("TaskResult", TaskResult1(foo="barrio"), lambda t: t.state == {"err": None} and t.foo == "barrio"),
-        ]
-
-        for test_name, input_object, condition in tests:
-            with self.subTest(test_name=test_name):
-                self.assertTrue(condition(Task1().merge_object(input_object)))
+                task: Task1 = Task1().merge_object(input_object)
+                self.assertEqual(expected, task.foo)
 
     def test_task_merge_object_include_exclude(self):
+        @taskclass
         class TestTaskWithExclude(Task):  # pylint: disable=abstract-method
-            __slots__ = ()
-            _EXCLUDE_FROM_MERGE = {"color"}  # pylint: disable=invalid-name
+            _exclude_from_merge = {"color"}
 
-        dict_to_merge = {"bar": "foo", "color": "red", "apple": "honey crisp"}
+            color: str = "yellow"
 
-        tests = [
-            ("Include not in dict", {"include": {"foo"}}, lambda t: t.state is None and t.foo == "bar"),
-            ("Include in dict (bar)", {"include": {"bar"}}, lambda t: t.state == {"bar": "foo"} and t.foo == "bar"),
+            def _perform_task(self) -> None:
+                pass
+
+        dict_to_merge = {"foo": "baz", "color": "red", "apple": "honey crisp"}
+
+        tests: typing.List[typing.Tuple[str, typing.Dict[str, typing.Any], str]] = [
+            ("Include not in dict", {"include": {"baz"}}, "bar"),
+            ("Include in dict (foo)", {"include": {"foo"}}, "baz"),
             (
-                "Include in dict (bar, color)",
+                "Include in dict not on task (bar, color)",
                 {"include": {"bar", "color"}},
-                lambda t: t.state == {"bar": "foo", "color": "red"} and t.foo == "bar",
+                "bar",
             ),
-            ("Exclude not in dict", {"exclude": {"foo"}}, lambda t: t.state == dict_to_merge and t.foo == "bar"),
+            ("Exclude not in dict", {"exclude": {"bar"}}, "baz"),
             (
-                "Exclude in dict (bar)",
-                {"exclude": {"bar"}},
-                lambda t: t.state == {"color": "red", "apple": "honey crisp"} and t.foo == "bar",
+                "Exclude in dict (foo)",
+                {"exclude": {"foo"}},
+                "bar",
             ),
             (
                 "Exclude in dict (bar, color)",
-                {"exclude": {"bar", "color"}},
-                lambda t: t.state == {"apple": "honey crisp"} and t.foo == "bar",
+                {"exclude": {"apple", "color"}},
+                "baz",
             ),
             (
-                "Exclude and include (bar, color)",
-                {"include": {"bar", "color"}, "exclude": {"bar", "color"}},
-                lambda t: t.state == {"apple": "honey crisp"} and t.foo == "bar",
+                "Exclude and include equal (foo, color)",
+                {"include": {"foo", "color"}, "exclude": {"foo", "color"}},
+                "bar",
             ),
             (
-                "Exclude with overwrite",
-                {"exclude": {"bar"}, "overwrite": {"color": "purple"}},
-                lambda t: t.state == {"color": "purple", "apple": "honey crisp"} and t.foo == "bar",
+                "Exclude with overwrite (foo)",
+                {"exclude": {"foo"}, "overwrite": {"foo": "bazinga"}},
+                "bazinga",
             ),
         ]
 
-        for test_name, kwargs, condition in tests:
+        for test_name, kwargs, expected in tests:
             with self.subTest(test_name=test_name):
-                task = Task1().merge_object(dict_to_merge, **kwargs)
-                self.assertTrue(condition(task))
+                task: Task1 = Task1().merge_object(dict_to_merge, **kwargs)
+                self.assertEqual(expected, task.foo)
 
-        with self.subTest(test_name="Exclude with _EXCLUDE_FROM_MERGE"):
-            task = TestTaskWithExclude()
-            task.merge_object(dict_to_merge)
-            self.assertTrue(task.state == {"bar": "foo", "apple": "honey crisp"})
+        with self.subTest(test_name="Exclude with _exclude_from_merge"):
+            task_with_exclude: TestTaskWithExclude = TestTaskWithExclude().merge_object(dict_to_merge)
+            self.assertEqual("yellow", task_with_exclude.color)
 
     def test_task_ror_merge_object(self):
         with mock.patch.object(Task, "run"):
@@ -160,4 +142,4 @@ class TestTaskAndUtilityMethods(unittest.TestCase):
             task_result = TaskResult1(err=err, foo="barrio")
             next_task = Task1()
             (task_result | next_task)  # pylint: disable=pointless-statement
-            self.assertTrue(next_task.state == {"err": err} and next_task.foo == "barrio")
+            self.assertEqual("barrio", next_task.foo)
