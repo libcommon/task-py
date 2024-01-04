@@ -122,3 +122,7 @@ Tests are run by [Pytest](https://docs.pytest.org/en/latest/), and should be pla
 All files named `test_*.py` in that directory that contain tests will be discovered by Pytest.
 See the [Pytest discovery documentation](https://docs.pytest.org/en/6.2.x/example/pythoncollection.html) for more information.
 Examples in docstrings are also tested by [doctest](https://docs.python.org/3/library/doctest.html) automatically, which keeps examples up-to-date and accurate.
+
+**NOTE:** Support for [Dataclass Transforms](https://peps.python.org/pep-0681) was not added until Python 3.11.
+Consequently, using the `@taskclass` decorator in this package will cause MyPy to wine about invalid task constructor arguments (`[call-arg]`).
+These errors can safely be ignored.

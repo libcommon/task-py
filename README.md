@@ -42,69 +42,89 @@ See [DEVELOPMENT.md](DEVELOPMENT.md) for local development and build dependencie
 
 ### Creating a Task
 
-Creating a `Task` is simple: specify some (optional) attributes and implement `Task._perform_task`, which performs the primary
-unit of work. For example, you could implement a task that takes a file path and prints the data of that
-file to stdout:
+Creating a `Task` is simple: specify some (optional) attributes and implement `Task._perform_task`, which performs the primary unit of work.
+For example, you could implement a task that takes a file path and prints the data of that file to stdout:
 
 ```python
+import typing
 from pathlib import Path
 
-from lc_task import Task
+from lc_task import Task, taskclass
 
 
+@taskclass
 class CatFileTask(Task):
     """Print contents of a file to stdout."""
-    __slots__ = ("_input_path",)
-
-    def __init__(self, input_path: Path, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-        self._input_path
+    input_path: typing.Optional[Path] = None
 
     def _perform_task(self) -> None:
-        if not self._input_path.is_file():
-            raise FileNotFoundError(str(self._input_path))
-        with self._input_path.open() as input_file:
-            print(input_file.read())
+        if self.input_path is None:
+            raise ValueError("No input path provided")
+        if not self.input_path.is_file():
+            raise FileNotFoundError(self.input_path)
+        print(self.input_path.read_text())
+
+if __name__ == "__main__":
+    import sys
+    # Example of how to use CatFileTask.run() to run the task
+    CatFileTask(input_path=Path(sys.argv[0])).run()
 ```
 
-In the example above, we defined an attribute `_input_path` on `CatFileTask` to store the input file path. However, you
-can also use the `state` dict attribute to store arbitrary state. For tasks that require some setup and teardown steps,
-use the `Task._preamble` and `Task._postamble` functions, which get called before and after the primary unit of work is completed.
-To run this task explicitly, you would use the `Task.run` method.
+In the example above, we define an attribute `input_path` on `CatFileTask` to store the input file path.
+For tasks that require some setup and teardown steps, use the `Task._preamble` and `Task._postamble` functions,
+which get called before and after the primary unit of work is completed.
+To run this task explicitly, use the `CatFileTask.run` method.
 
 ### Accepting Command Line Input
 
-To create a single task that takes command line input (using `argparse`), create a child class of `CLITask` that defines the
-name of the command, a brief description, and the command line arguments. Taking the example above:
+To create a task that takes command line input (using `argparse`), create a child class of `CliTask` that defines
+the name of the command, a brief description, and the command line arguments (plus optional command aliases). Taking the example above:
 
 ```python
+import typing
 from pathlib import Path
 
-from lc_task import CLITask
+from lc_task import CliTask, Task, taskclass
 
 
-class CatFileTask(CLITask):
-    __slots__ = ("_input_path",)
-
-    COMMAND = "cat"
-    DESCRIPTION = "Print contents of a file to stdout."
-
-    @classmethod
-    def gen_command_parser(cls, parser: Optional[ArgumentParser] = None) -> ArgumentParser:
-        parser = super().gen_command_parser()
-        parser.add_argument("_input_path", type=Path, metavar="INPUT_PATH", help="Path to input file")
-        return parser
+@taskclass
+class CatFileTask(Task):
+    """Print contents of a file to stdout."""
+    input_path: typing.Optional[Path] = None
 
     def _perform_task(self) -> None:
-        if not self._input_path.is_file():
-            raise FileNotFoundError(str(self._input_path))
-        with self._input_path.open() as input_file:
-            print(input_file.read())
+        if self.input_path is None:
+            raise ValueError("No input path provided")
+        if not self.input_path.is_file():
+            raise FileNotFoundError(self.input_path)
+        print(self.input_path.read_text())
+
+
+@taskclass
+class CatFileCliTask(CliTask):
+    _task_cls = CatFileTask
+    command = "cat"
+    aliases = ["c"]
+    description = "Print contents of a file to stdout."
+
+    @classmethod
+    def gen_command_parser(cls, parser: typing.Optional[ArgumentParser] = None) -> ArgumentParser:
+        parser = super(CatFileCliTask, cls).gen_command_parser()
+        parser.add_argument("input_path", type=Path, help="Path to input file")
+        return parser
 
 
 if __name__ == "__main__":
     CatFileTask.run_command()
 ```
+
+This example shows a few key features of the library:
+
+1. The command line parser for a CLI task is defined using the `CliTask.gen_command_parser` function.
+2. Command aliases can be added using the `CliTask.aiases` attribute.
+3. `Task`s and `CLiTask`s are easily composable using the `_task_cls` attribute of `CliTask`.
+By default, `CliTask` merges the command line arguments with an instance of `_task_cls` and runs the task.
+This behavior can be customized by overriding `Clitask._gen_task` and `Clitask._perform_task`.
 
 For defining more complex, hierarchical command line interfaces with subcommands, look at the documentation for `cli.gen_cli_parser`.
 It allows you to define your command line app with a mapping of commands to actions, then generates the CLI for you.
@@ -112,9 +132,9 @@ It allows you to define your command line app with a mapping of commands to acti
 ### Pipelines and Message Passing
 
 Anyone who has used Bash, PowerShell, or other scripting languages is familiar with the idea of composability and pipes:
-writing simple commands that return structured data recognized by other commands can be very powerful.  Python does not
-support this style of programming out of the box, but it does support overloading operators for custom types, such as the
-bitwise or operator (`|`).  In Python, the [`__ror__` builtin method](https://docs.python.org/3/reference/datamodel.html#object.__or__)
+writing simple commands that return structured data recognized by other commands can be very powerful.
+Python does not support this style of programming out of the box, but it does support overloading operators for custom types,such as the bitwise or operator (`|`).
+In Python, the [`__ror__` builtin method](https://docs.python.org/3/reference/datamodel.html#object.__or__)
 is called when using the bitwise or operator on two objects where the first (left side) doesn't implement `__or__`.
 
 `task-py` takes advantage of this flexibility to allow piping `Task`s together to create pipelines. For example, suppose
@@ -126,80 +146,70 @@ There are two clear steps in this pipeline:
 
 ```python
 import csv
+import typing
 from pathlib import Path
-from typing import List, Optional, TextIO
 
-from lc_task import CLITask, Task, TaskResult
+from lc_task import CliTask, Task, TaskResult, taskclass
 
 
-class CSVColumnRemovalTask(Task):
+@taskclass
+class CsvColumnRemovalTask(Task):
     """Remove specified columns from frows in a CSV."""
     __slots__ = ("columns", "input_file", "reader")
-
-    def __init__(self, *args, columns: Optional[List[str]] = None, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-        self.columns = columns
+    columns_to_remove: typing.Optional[typing.List[str]] = None
+    records: typing.Optional[typing.List[typing.Dict[str, typing.Any]]] = None
 
     def _perform_task(self) -> None:
-        for record in reader:
-            for column in self.columns:
-                del record[column]
-            print(", ".join(record))
-
-    def _preamble(self) -> None:
-        self.input_file.close()
-
-
-class CSVReaderTaskResult(TaskResult):
-    __slots__ = ("input_file", "reader")
-
-    def __init__(self: input_file: Optional[TextIO] = None, reader: Optional[csv.DictReader] = None, **kwargs) -> None:
-        super().__init__(**kwargs)
-        self.input_file = input_file
-        self.reader = reader
+        if self.columns and self.records:
+            # Print the header row
+            print(",".join(records[0].keys()))
+            for record in records:
+                for column in self.columns:
+                    del record[column]
+                # Print the record
+                print(", ".join(record.values()))
 
 
-class CSVReaderTask(Task):
+@taskclass
+class CsvReaderTaskResult(TaskResult):
+    records: typing.Optional[typing.List[typing.Dict[str, typing.Any]]] = None
+
+
+@taskclass
+class CsvReaderTask(Task):
     """Read data from a CSV into a `csv.DictReader` object."""
-    __slots__ = ("input_path",)
+    _result_cls = CsvReaderTaskResult
 
-    @staticmethod
-    def gen_task_result() -> TaskResult:
-        return CSVReaderTaskResult()
-
-    def __init__(self, *args, input_path: Optional[Path] = None, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-        self.input_path = input_path
+    input_path: typing.Optional[Path] = None
 
     def _perform_task(self) -> None:
-        # Need to check self.input_path because it could be provided in
-        # __init__ or via merge_object
-        if not self.input_path:
-            raise ValueError("must provide path to CSV file")
+        if self.input_path is None:
+            raise ValueError("Must provide path to or file handle of CSV file")
+        if not self.input_path.is_file():
+            raise FileNotFoundError(self.input_file)
 
-        input_file = self.input_path.open(newline="")
-        reader = csv.DictReader(input_file, dialect=csv.unix_dialect)
-        # Using a defined TaskResult type here, but could also just use a dict
-        self.result = CSVReaderTaskResult(input_file = input_file, reader = reader)
+        with self.input_path.open(newline="") as input_file:
+            self.result.records = [record for record in csv.DictReader(input_file, csv.unix_dialect)]
 
 
-class RemoveColumnsCLITask(CLITask):
-    __slots__ = ("columns", "input_path")
-
-    COMMAND = "remove-columns"
-    DESCRIPTION = "Remove columns from a CSV and write to disk."
+@taskclass
+class RemoveColumnsCliTask(CliTask):
+    command = "remove-columns"
+    description = "Remove columns from a CSV and write to disk."
 
     @classmethod
     def gen_command_parser(cls, parser: Optional[ArgumentParser] = None) -> ArgumentParser:
-        parser = super().gen_command_parser()
+        parser = super(RemoveColumnsCliTask, cls).gen_command_parser()
         parser.add_argument("input_path", type=Path, help="Path to input file")
         parser.add_argument("columns", nargs=+, help="Column names to remove")
         return parser
 
     def _perform_task(self) -> None:
+        columns_to_remove: typing.List[str] = self.args.columns
+        input_path: Path = self.args.path = self.args.input_path
         # Pipe the output of CSVReaderTask to CSVColumnRemovalTask
-        (CSVReaderTask(input_path = self.input_path).run() |
-         CSVColumnRemovalTask(columns = self.columns))
+        (CSVReaderTask(input_path=input_path).run() |
+         CSVColumnRemovalTask(columns_to_remove=columns_to_remove))
 
 
 if __name__ == "__main__":

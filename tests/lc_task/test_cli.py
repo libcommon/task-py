@@ -1,83 +1,87 @@
+# mypy: disable-error-code="call-arg"
 # pylint: disable=invalid-name,missing-class-docstring,missing-function-docstring
 import typing
 import unittest
 from argparse import ArgumentParser, Namespace
 from unittest import mock
 
-from lc_task.cli import CLITask, gen_cli_parser
+from lc_task import taskclass
+from lc_task.cli import CliParserConfig, CliTask, gen_cli_parser
 
 
-class WormsTask(CLITask):
-    __slots__ = ()
-
-    COMMAND = "worms"
-    DESCRIPTION = "Worms task"
+@taskclass
+class WormsTask(CliTask):
+    aliases = ["w"]
+    command = "worms"
+    description = "Worms task."
 
     @classmethod
     def gen_command_parser(cls, parser: typing.Optional[ArgumentParser] = None) -> ArgumentParser:
-        parser = super().gen_command_parser(parser)
+        parser = super(WormsTask, cls).gen_command_parser(parser)
         parser.add_argument("genus")
         parser.add_argument("species")
         return parser
 
     def _perform_task(self) -> None:
-        print("Worms!")
+        assert self.args is not None
+        print(f"Worms! Genus: {self.args.genus}, Species: {self.args.species}")
 
 
+@taskclass
 class ArthropodsTask(WormsTask):
-    __slots__ = ()
-
-    COMMAND = "arthropods"
-    DESCRIPTION = "Arthropods task"
+    aliases = []
+    command = "arthropods"
+    description = "Arthropods task."
 
     def _perform_task(self) -> None:
         print("Arthropods!")
 
 
-class FishTask(CLITask):
-    __slots__ = ()
-
-    COMMAND = "fish"
-    DESCRIPTION = "Fish task"
+@taskclass
+class FishTask(CliTask):
+    aliases = ["f"]
+    command = "fish"
+    description = "Fish task."
 
     @classmethod
     def gen_command_parser(cls, parser: typing.Optional[ArgumentParser] = None) -> ArgumentParser:
-        parser = super().gen_command_parser(parser)
+        parser = super(FishTask, cls).gen_command_parser(parser)
         parser.add_argument("region")
         parser.add_argument("--fresh-water", action="store_true", dest="fresh_water")
         return parser
 
     def _perform_task(self) -> None:
-        print("Fish!")
+        assert self.args is not None
+        print(f"Fish! Region: {self.args.region}, Is Fresh Water: {self.args.fresh_water}")
 
 
-class TestCLITask(unittest.TestCase):
-    """Test for CLITask and gen_cli_parser"""
+class TestCliTask(unittest.TestCase):
+    """Test for CliTask and gen_cli_parser"""
 
     def test_clitask_gen_command_parser_without_parent(self):
         parser = WormsTask.gen_command_parser()
-        self.assertEqual(parser.prog, WormsTask.COMMAND)
-        self.assertEqual(parser.description, WormsTask.DESCRIPTION)
+        self.assertEqual(parser.prog, WormsTask.command)
+        self.assertEqual(parser.description, WormsTask.description)
 
     def test_clitask_gen_command_parser_with_parent(self):
         parser = WormsTask.gen_command_parser()
         parser = ArthropodsTask.gen_command_parser(parser)
-        self.assertEqual(parser.prog, WormsTask.COMMAND)
-        self.assertEqual(parser.description, WormsTask.DESCRIPTION)
+        self.assertEqual(parser.prog, WormsTask.command)
+        self.assertEqual(parser.description, WormsTask.description)
 
     def test_clitask_run_command_all_args(self):
-        with mock.patch.object(CLITask, "run", lambda self: self.state):
+        with mock.patch.object(CliTask, "run", lambda self: self.args):
             argv = ["Lumbricus", "terrestris"]
-            task_state = WormsTask.run_command(argv=argv)
-            self.assertEqual("Lumbricus", task_state.get("genus"))
-            self.assertEqual("terrestris", task_state.get("species"))
+            args = WormsTask.run_command(argv=argv)
+            self.assertEqual("Lumbricus", args.genus)  # type: ignore[attr-defined]
+            self.assertEqual("terrestris", args.species)  # type: ignore[attr-defined]
 
     def test_clitask_run_command_known_args(self):
-        with mock.patch.object(CLITask, "run", lambda self: self.state):
+        with mock.patch.object(CliTask, "run", lambda self: self.args):
             argv = ["Lumbricus", "terrestris", "--found-on", "land"]
-            task_state = WormsTask.run_command(argv=argv, known_args=True)
-            self.assertEqual("Lumbricus", task_state.get("genus"))
-            self.assertEqual("terrestris", task_state.get("species"))
+            args = WormsTask.run_command(argv=argv, known_args=True)
+            self.assertEqual("Lumbricus", args.genus)  # type: ignore[attr-defined]
+            self.assertEqual("terrestris", args.species)  # type: ignore[attr-defined]
 
     def test_gen_cli_parser(self):
         root_parser = ArgumentParser(add_help=False)
@@ -86,7 +90,7 @@ class TestCLITask(unittest.TestCase):
             type=str,
             required=False,
             default="INFO",
-            help="Logging level (default: INFO)",
+            help="Logging level (default: %(default)s)",
             dest="log_level",
         )
 
@@ -95,10 +99,10 @@ class TestCLITask(unittest.TestCase):
 
         root_parser.set_defaults(func=print_help)
 
-        tests = [
+        tests: typing.List[typing.Tuple[str, CliParserConfig, typing.List[str], Namespace]] = [
             ("Root parser only", {}, ["--level", "DEBUG"], Namespace(log_level="DEBUG", func=print_help)),
             (
-                "Single subcommand - depth of 1",
+                "Single subcommand, depth of 1",
                 {WormsTask: {}},
                 ["worms", "Lumbricus", "terrestris"],
                 Namespace(
@@ -106,11 +110,23 @@ class TestCLITask(unittest.TestCase):
                     genus="Lumbricus",
                     species="terrestris",
                     subcommand="worms",
-                    func=WormsTask._CLITask__run_command,  # pylint: disable=no-member,protected-access
+                    func=WormsTask._CliTask__run_command,  # type: ignore[attr-defined] # pylint: disable=no-member,protected-access
                 ),
             ),
             (
-                "Two subcommands, depth of 1",
+                "Single subcommand with alias, depth of 1",
+                {WormsTask: {}},
+                ["w", "Lumbricus", "terrestris"],
+                Namespace(
+                    log_level="INFO",
+                    genus="Lumbricus",
+                    species="terrestris",
+                    subcommand="w",
+                    func=WormsTask._CliTask__run_command,  # type: ignore[attr-defined] # pylint: disable=no-member,protected-access
+                ),
+            ),
+            (
+                "Multiple subcommands, depth of 1",
                 {WormsTask: {}, ArthropodsTask: {}},
                 ["--level", "WARNING", "arthropods", "Palaemonias", "ganteri"],
                 Namespace(
@@ -118,23 +134,59 @@ class TestCLITask(unittest.TestCase):
                     genus="Palaemonias",
                     species="ganteri",
                     subcommand="arthropods",
-                    func=ArthropodsTask._CLITask__run_command,  # pylint: disable=no-member,protected-access
+                    func=ArthropodsTask._CliTask__run_command,  # type: ignore[attr-defined] # pylint: disable=no-member,protected-access
                 ),
             ),
             (
-                "Three subcommands, with tuples, depth of 2",
-                {("invertebrates", "Invertebrate animals"): {WormsTask: {}, ArthropodsTask: {}}},
+                "Single subcommand, depth of 2, tuple without aliases",
+                {("invertebrates", "Invertebrate animals"): {ArthropodsTask: {}}},
                 ["invertebrates", "arthropods", "Neotibicen", "linnei"],
                 Namespace(
                     log_level="INFO",
                     genus="Neotibicen",
                     species="linnei",
                     subcommand="arthropods",
-                    func=ArthropodsTask._CLITask__run_command,  # pylint: disable=no-member,protected-access
+                    func=ArthropodsTask._CliTask__run_command,  # type: ignore[attr-defined] # pylint: disable=no-member,protected-access
                 ),
             ),
             (
-                "Five subcommands, with tuples, depth of 2",
+                "Single subcommand, depth of 2, tuple with aliases",
+                {(("invertebrates", "i"), "Invertebrate animals"): {ArthropodsTask: {}}},
+                ["i", "arthropods", "Neotibicen", "linnei"],
+                Namespace(
+                    log_level="INFO",
+                    genus="Neotibicen",
+                    species="linnei",
+                    subcommand="arthropods",
+                    func=ArthropodsTask._CliTask__run_command,  # type: ignore[attr-defined] # pylint: disable=no-member,protected-access
+                ),
+            ),
+            (
+                "Multiple subcommands, depth of 2, tuple without aliases",
+                {("invertebrates", "Invertebrate animals"): {WormsTask: {}, ArthropodsTask: {}}},
+                ["invertebrates", "worms", "Lumbricus", "terrestris"],
+                Namespace(
+                    log_level="INFO",
+                    genus="Lumbricus",
+                    species="terrestris",
+                    subcommand="worms",
+                    func=WormsTask._CliTask__run_command,  # type: ignore[attr-defined] # pylint: disable=no-member,protected-access
+                ),
+            ),
+            (
+                "Multiple subcommands, depth of 2, tuple with aliases",
+                {(("invertebrates", "i"), "Invertebrate animals"): {WormsTask: {}, ArthropodsTask: {}}},
+                ["i", "worms", "Lumbricus", "terrestris"],
+                Namespace(
+                    log_level="INFO",
+                    genus="Lumbricus",
+                    species="terrestris",
+                    subcommand="worms",
+                    func=WormsTask._CliTask__run_command,  # type: ignore[attr-defined] # pylint: disable=no-member,protected-access
+                ),
+            ),
+            (
+                "Multiple subcommands, depth of 2, multiple tuples without aliases",
                 {
                     ("invertebrates", "Invertebrate animals"): {
                         WormsTask: {},
@@ -150,7 +202,27 @@ class TestCLITask(unittest.TestCase):
                     region="Canada",
                     fresh_water=True,
                     subcommand="fish",
-                    func=FishTask._CLITask__run_command,  # pylint: disable=no-member,protected-access
+                    func=FishTask._CliTask__run_command,  # type: ignore[attr-defined] # pylint: disable=no-member,protected-access
+                ),
+            ),
+            (
+                "Multiple subcommands, depth of 2, multiple tuples with aliases",
+                {
+                    ("invertebrates", "Invertebrate animals"): {
+                        WormsTask: {},
+                        ArthropodsTask: {},
+                    },
+                    (("vertebrates", "v"), "Vertebrate animals"): {
+                        FishTask: {},
+                    },
+                },
+                ["v", "f", "Canada", "--fresh-water"],
+                Namespace(
+                    log_level="INFO",
+                    region="Canada",
+                    fresh_water=True,
+                    subcommand="f",
+                    func=FishTask._CliTask__run_command,  # type: ignore[attr-defined] # pylint: disable=no-member,protected-access
                 ),
             ),
         ]

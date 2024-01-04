@@ -1,0 +1,7 @@
+lc\_task.task module
+====================
+
+.. automodule:: lc_task.task
+   :members:
+   :undoc-members:
+   :show-inheritance:

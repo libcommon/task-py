@@ -1,0 +1,16 @@
+lc\_task package
+================
+
+.. automodule:: lc_task
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 4
+
+   lc_task.cli
+   lc_task.task
