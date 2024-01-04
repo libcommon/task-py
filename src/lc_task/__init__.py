@@ -1,3 +1,3 @@
-from .task import Task, TaskResult
+from .task import Task, TaskResult, taskclass
 
 __author__ = "libcommon"

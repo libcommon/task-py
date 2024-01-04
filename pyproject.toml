@@ -54,6 +54,7 @@ profile = "black"
 src_paths = [ "src", "tests" ]
 
 [tool.mypy]
+check_untyped_defs = true
 warn_return_any = true
 warn_unused_ignores = true
 files = [ "src", "tests" ]

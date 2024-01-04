@@ -24,11 +24,11 @@ sys.path.insert(0, str(modules_root_path))
 # -- Project information -----------------------------------------------------
 
 project = "task-py"
-copyright = "2022, Libcommon"
+copyright = "2023, Libcommon"
 author = "Libcommon"
 
 # The short X.Y.Z version
-version = "0.1.0"
+version = "0.3.0"
 
 # The full version, including alpha/beta/rc tags
 release = version
@@ -87,7 +87,7 @@ html_theme_options = {
     "color_accent": "",
 
     # Set the repo location to get a badge with stats
-    "repo_url": "",
+    "repo_url": "https://github.com/libcommon/task-py",
     "repo_name": project,
 
     # If True, minify CSS files in output directory    
@@ -120,6 +120,21 @@ html_sidebars = {
 
 
 # -- Extension configuration -------------------------------------------------
+
+# -- Options for copybutton extension ---------------------------------------
+# See: https://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html
+
+autodoc_default_options = {
+    "inherited-members": False,
+    "members": True,
+    "show-inheritance": True,
+    "private-members": "_preamble, _perform_task, _postamble, _result_cls, _task_cls, _gen_task",
+}
+
+autodoc_type_aliases = {
+    "CliParserConfig": "lc_task.cli.CliParserConfig",
+    "StatePropagationSource": "lc_task.task.StatePropagationSource",
+}
 
 # -- Options for copybutton extension ---------------------------------------
 # See: https://sphinx-copybutton.readthedocs.io/en/latest/
